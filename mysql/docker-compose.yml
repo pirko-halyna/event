@@ -1,0 +1,29 @@
+version: '3.1'
+
+services:
+  mysql:
+    image: mysql:latest
+    platform: linux/x86_64
+    container_name: mysql
+    hostname: mysql
+    ports:
+      - "33066:3306"
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=events
+      - MYSQL_USER=events
+      - MYSQL_PASSWORD=qwerty
+
+    networks:
+      - project_network
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+
+networks:
+  project_network:
+    name: project_net
+    external: true

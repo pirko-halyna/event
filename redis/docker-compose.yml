@@ -1,0 +1,23 @@
+version: '2'
+services:
+  redis:
+    container_name: redis
+    hostname: redis
+    image: redis:alpine
+    command: /bin/sh -c "redis-server --requirepass $$REDIS_HOST_PASSWORD"
+    ports:
+      - '63792:6379'
+    volumes:
+      - ./redis-data:/data
+    networks:
+      - project_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      retries: 3
+      timeout: 5s
+    environment:
+      - REDIS_HOST_PASSWORD=123456
+networks:
+  project_network:
+    name: project_net
+    external: true

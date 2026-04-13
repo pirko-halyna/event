@@ -1,0 +1,28 @@
+version: '3.9'
+services:
+    dps:
+        image: defreitas/dns-proxy-server
+#        ports:
+#            - "53:53"
+#            - "5380:5380"
+        network_mode: host
+        container_name: dns-proxy.server
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - /etc/resolv.conf:/etc/resolv.conf
+        hostname: dns-proxy.server
+        restart: always
+#        networks:
+#            project_network:
+#            dps-network:
+#                ipv4_address: 192.168.10.10
+
+networks:
+    project_network:
+        name: project_net
+        external: true
+    dps-network:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 192.168.10.0/24
