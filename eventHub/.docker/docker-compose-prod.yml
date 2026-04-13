@@ -1,0 +1,40 @@
+version: '3.9'
+services:
+  #PHP Service
+  events-api-fpm:
+    image: innamospan/events-api:latest
+    container_name: events-api-fpm
+    env_file:
+      - .env.production
+    volumes:
+      - /srv/storage:/srv/events-api/storage/app
+      - /srv/events-api/vendor
+      - /srv/events-api/bootstrap/cache
+      - /srv/events-api/storage/framework
+    networks:
+      - project_network
+
+  #Nginx Service
+  events-api:
+    depends_on:
+      - events-api-fpm
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    image: nginx:stable-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ..:/srv/events-api:ro
+    container_name: events-api-nginx
+    hostname: events-api
+    environment:
+      - SERVER_NAME=events-api.com
+      - FPM_SERVICE_NAME=events-api-fpm
+    networks:
+      - project_network
+
+#Docker Networks
+networks:
+  project_network:
+    name: project_net
+    external: true
