@@ -28,12 +28,10 @@ class FilterBuilder
                 continue;
             }
 
-            //check if value provided
-            if (!empty($value)) {
-                //instantiate the class with the query, and call handle() method with the $value as parameter
+            if ($value !== null && $value !== '') {
                 (new $class($this->query))->handle($value);
             } else {
-                //instantiate the class with the query, and call handle() method without parameter (for sorting etc.)
+                // no value provided — call handle() without argument (for sorting etc.)
                 (new $class($this->query))->handle();
             }
         }

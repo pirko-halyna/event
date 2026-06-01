@@ -26,10 +26,10 @@ class OrganizerController extends Controller
      * Get organizer by id
      *
      * @param Organizer $organizer
-     * @return Organizer
+     * @return OrganizerResource
      */
-    public function show(Organizer $organizer): Organizer
+    public function show(Organizer $organizer): OrganizerResource
     {
-        return $organizer;
+        return new OrganizerResource($organizer);
     }
 }

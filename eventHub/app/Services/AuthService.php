@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
-use Laravel\Prompts\Key;
-use App\Models\{PasswordResetToken, User};
+use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
@@ -46,34 +47,44 @@ class AuthService
         return auth()->login($user);
     }
 
+    public function requestPasswordReset(string $email): void
+    {
+        Password::sendResetLink(['email' => $email]);
+    }
+
     /**
-     * Reset users password by token
-     * if token is valid - set new password for user and delete token
+     * Reset user's password via the Password Broker.
+     * Throws ValidationException on invalid or expired token.
      *
-     * @param string $token
-     * @param string $newPassword
-     * @return void
      * @throws ValidationException
      */
-    public function resetPassword(string $token, string $newPassword): void
+    public function resetPassword(string $token, string $email, string $newPassword): void
     {
-        // find token
-        $token = PasswordResetToken::where('token', $token)->first();
+        $status = Password::reset(
+            [
+                'email'                 => $email,
+                'password'              => $newPassword,
+                'password_confirmation' => $newPassword,
+                'token'                 => $token,
+            ],
+            function (User $user, string $password) {
+                $user->forceFill(['password' => $password])->save();
+            }
+        );
 
-        // update password
-        $user = $token->user;
-        $user->password = $newPassword;
-        $user->save();
-
-        // delete used token
-        $token->delete();
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages([
+                'token' => [__($status)],
+            ]);
+        }
     }
 
     public function getUserByToken(string $token): ?User
     {
         try {
             return JWTAuth::setToken($token)->toUser();
-        } catch (\Exception $e) {
+        } catch (JWTException $e) {
+            Log::warning('JWT authentication failed.', ['message' => $e->getMessage()]);
             return null;
         }
     }

@@ -15,8 +15,8 @@ class PaginationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'page' => 'integer|min:1',
-            'per_page' => 'integer|min:1',
+            'page'     => 'integer|min:1',
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:' . config('pagination.max_per_page')],
         ];
     }
 }

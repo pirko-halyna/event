@@ -9,12 +9,9 @@ use App\Http\Requests\Auth\{
     RegisterRequest,
 };
 use App\Http\Resources\TokenResource;
-use App\Mail\PasswordReset;
-use App\Models\PasswordResetToken;
 use App\Services\AuthService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\{JsonResponse, Response};
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -64,13 +61,14 @@ class AuthController extends Controller
 
     /**
      * @param PasswordResetRequest $request
-     * @return void
+     * @param AuthService $service
+     * @return JsonResponse
      */
-    public function passwordResetRequest(PasswordResetRequest $request): void
+    public function passwordResetRequest(PasswordResetRequest $request, AuthService $service): JsonResponse
     {
-        $token = (new PasswordResetToken())->create(['email' => $request->email]);
+        $service->requestPasswordReset($request->email);
 
-        Mail::to($request->email)->send(new PasswordReset($token->token));
+        return response()->json(['message' => 'If this email is registered, a reset link has been sent.']);
     }
 
     /**
@@ -81,7 +79,7 @@ class AuthController extends Controller
      */
     public function passwordResetConfirm(NewPasswordRequest $request, AuthService $service): JsonResponse
     {
-        $service->resetPassword($request->token, $request->new_password);
+        $service->resetPassword($request->token, $request->email, $request->new_password);
 
         return response()->json([
             'message' => 'Password reset successfully',
