@@ -166,6 +166,20 @@ class GetEventsResponseTest extends TestCase
     }
 
     #[Test]
+    public function it_filters_events_by_is_online_false()
+    {
+        $response = $this->json('GET', route('events.index', ['is_online' => 0]));
+
+        $response->assertOk()
+            ->assertJsonFragment([
+                'is_online' => false
+            ])
+            ->assertJsonMissing([
+                'is_online' => true
+            ]);
+    }
+
+    #[Test]
     public function it_filters_events_by_category()
     {
         $response = $this->json('GET', route('events.index', ['categories' => [$this->event1->category->id]]));

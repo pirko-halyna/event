@@ -29,6 +29,7 @@ class GetFavouriteEventsResponseTest extends TestCase
 
         $response->assertOk()
             ->assertJsonCount(2, 'data')
-            ->assertJsonFragment(['id' => $events[0]->id]);
+            ->assertJsonFragment(['id' => $events[0]->id])
+            ->assertJsonFragment(['is_favourite' => true]);
     }
 }

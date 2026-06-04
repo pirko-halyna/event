@@ -2,7 +2,8 @@
 
 namespace Feature\Request\Auth;
 
-use App\Models\PasswordResetToken;
+use App\Models\User;
+use Illuminate\Support\Facades\Password;
 use PHPUnit\Framework\Attributes\{Group, Test};
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -53,12 +54,17 @@ class NewPasswordRequestTest extends TestCase
     }
 
     #[Test]
-    public function token_must_exist_in_password_reset_tokens_table(): void
+    public function invalid_token_is_rejected(): void
     {
+        $user = User::factory()->create();
+
         $this->postJson(route('auth.password-reset.confirm'), [
-            'token' => PasswordResetToken::factory()->make()->token
+            'email'                    => $user->email,
+            'new_password'             => 'validpassword',
+            'new_password_confirmation' => 'validpassword',
+            'token'                    => 'nonexistenttoken',
         ])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['token' => 'The selected token is invalid.']);
+            ->assertJsonValidationErrors(['token']);
     }
 }

@@ -2,18 +2,15 @@
 
 namespace Tests\Feature\Action\Auth;
 
-use App\Mail\PasswordReset;
-use App\Models\PasswordResetToken;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use PHPUnit\Framework\Attributes\{Group, Test};
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\{Group, Test};
 use Tests\TestCase;
 
-/**
- * Class PasswordResetActionTest
- */
 #[Group('action')]
 #[Group('auth')]
 class PasswordResetActionTest extends TestCase
@@ -21,11 +18,11 @@ class PasswordResetActionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Mail::fake();
+        Notification::fake();
     }
 
     #[Test]
-    public function successfulPasswordReset(): void
+    public function successful_password_reset(): void
     {
         $user = User::factory()->create([
             'email' => 'test@example.com',
@@ -35,34 +32,45 @@ class PasswordResetActionTest extends TestCase
             'email' => $user->email,
         ]);
 
-        Mail::assertQueued(PasswordReset::class, function ($mail) use ($user) {
-            return $mail->hasTo($user->email);
-        });
+        Notification::assertSentTo($user, ResetPassword::class);
     }
 
     #[Test]
-    public function invalidEmailPasswordResetRequest(): void
+    public function it_allows_multiple_password_reset_requests_for_same_email(): void
+    {
+        $user = User::factory()->create();
+
+        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email])
+            ->assertOk();
+
+        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email])
+            ->assertOk();
+
+        $this->assertDatabaseCount('password_reset_tokens', 1);
+    }
+
+    #[Test]
+    public function invalid_email_password_reset_request(): void
     {
         $this->postJson(route('auth.password-reset.request'), [
             'email' => 'nonexistent@example.com',
         ]);
 
-        Mail::assertNothingQueued();
+        Notification::assertNothingSent();
     }
 
     #[Test]
-    public function user_password_changed_after_reset()
+    public function user_password_changed_after_reset(): void
     {
         $user = User::factory()->create();
-
-        $token = PasswordResetToken::factory()->for($user)->create();
-
+        $token = Password::createToken($user);
         $newPassword = Str::random(16);
 
         $this->postJson(route('auth.password-reset.confirm'), [
-            'new_password' => $newPassword,
+            'email'                    => $user->email,
+            'new_password'             => $newPassword,
             'new_password_confirmation' => $newPassword,
-            'token' => $token->token,
+            'token'                    => $token,
         ]);
 
         $user->refresh();
@@ -70,20 +78,19 @@ class PasswordResetActionTest extends TestCase
     }
 
     #[Test]
-    public function password_reset_token_deleted_after_usage()
+    public function password_reset_token_deleted_after_usage(): void
     {
         $user = User::factory()->create();
-
-        $token = PasswordResetToken::factory()->for($user)->create();
-
+        $token = Password::createToken($user);
         $newPassword = Str::random(16);
 
         $this->postJson(route('auth.password-reset.confirm'), [
-            'new_password' => $newPassword,
+            'email'                    => $user->email,
+            'new_password'             => $newPassword,
             'new_password_confirmation' => $newPassword,
-            'token' => $token->token,
+            'token'                    => $token,
         ]);
 
-        $this->assertDatabaseMissing('password_reset_tokens', ['token' => $token]);
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
     }
 }

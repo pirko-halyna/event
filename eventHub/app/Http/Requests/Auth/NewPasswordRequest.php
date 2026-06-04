@@ -6,16 +6,19 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class NewPasswordRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'email' => strtolower(trim($this->email ?? '')),
+        ]);
+    }
+
     public function rules(): array
     {
         return [
-            'new_password' => 'required|string|min:8|confirmed',
-            'token' => 'required|string|exists:password_reset_tokens,token',
+            'email'        => ['required', 'string', 'max:255', 'email:rfc,dns'],
+            'token'        => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
     }
 }

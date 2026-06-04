@@ -17,13 +17,14 @@ Route::prefix('auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])
         ->middleware('auth')->name('auth.logout');
 
-    Route::post('register', [AuthController::class, 'register'])->name('auth.register');
+    Route::post('register', [AuthController::class, 'register'])
+        ->middleware('throttle:register')->name('auth.register');
 
     Route::post('password-reset/request', [AuthController::class, 'passwordResetRequest'])
-        ->name('auth.password-reset.request');
+        ->middleware('throttle:password-reset')->name('auth.password-reset.request');
 
     Route::post('password-reset/confirm', [AuthController::class, 'passwordResetConfirm'])
-        ->name('auth.password-reset.confirm');
+        ->middleware('throttle:password-reset')->name('auth.password-reset.confirm');
 });
 
 Route::apiResource('categories', CategoryController::class)->only('index');

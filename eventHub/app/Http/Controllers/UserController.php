@@ -19,11 +19,10 @@ class UserController extends Controller
     {
         $user = $request->user();
 
-        $perPage = $request->get('per_page', 10);
-
         $favourites = $user->favouriteEvents()
             ->with(['author', 'category', 'location', 'organizer'])
-            ->paginate($perPage);
+            ->withExists(['favouriteUsers as is_favourite' => fn($q) => $q->where('favourites.user_id', $user->id)])
+            ->paginate($request->get('per_page', 10));
 
         return EventWithFavouriteResource::collection($favourites);
     }

@@ -2,30 +2,19 @@
 
 namespace App\Console\Commands;
 
-use App\Models\PasswordResetToken;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class DeletePasswordResetTokens extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'password-reset-tokens:delete';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Reset tokens';
+    protected $description = 'Delete expired password reset tokens';
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function handle(): void
     {
-        PasswordResetToken::where('created_at', '<', now()->subDay())->delete();
+        DB::table('password_reset_tokens')
+            ->where('created_at', '<', now()->subDay())
+            ->delete();
     }
 }

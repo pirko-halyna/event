@@ -2,26 +2,27 @@
 
 namespace Tests\Unit\Commands;
 
-use App\Models\PasswordResetToken;
-use Illuminate\Support\Facades\Artisan;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class DeletePasswordResetTokensCommandTest extends TestCase
 {
     #[Test]
-    public function handle_deletes_expired_tokens()
+    public function handle_deletes_expired_tokens(): void
     {
-        $oldToken = PasswordResetToken::factory()->create([
-            'created_at' => now()->subDays(2),
-        ]);
-        $this->assertModelExists($oldToken);
+        $expiredUser = User::factory()->create();
+        $activeUser  = User::factory()->create();
 
-        $newToken = PasswordResetToken::factory()->create();
+        DB::table('password_reset_tokens')->insert([
+            ['email' => $expiredUser->email, 'token' => hash('sha256', 'old'), 'created_at' => now()->subDays(2)],
+            ['email' => $activeUser->email,  'token' => hash('sha256', 'new'), 'created_at' => now()],
+        ]);
 
         $this->artisan('password-reset-tokens:delete')->assertSuccessful();
 
-        $this->assertModelMissing($oldToken);
-        $this->assertModelExists($newToken);
+        $this->assertDatabaseMissing('password_reset_tokens', ['email' => $expiredUser->email]);
+        $this->assertDatabaseHas('password_reset_tokens',    ['email' => $activeUser->email]);
     }
 }

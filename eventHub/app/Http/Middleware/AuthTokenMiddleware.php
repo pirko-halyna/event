@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\User;
 use App\Services\AuthService;
 use Closure;
 use Illuminate\Http\Request;
@@ -23,6 +22,11 @@ class AuthTokenMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $token = $request->bearerToken();
+
+        if (!$token) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $user = $this->authService->getUserByToken($token);
 
         if (!$user) {
