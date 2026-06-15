@@ -22,16 +22,17 @@ class EventFactory extends Factory
     public function definition(): array
     {
         return [
-            'title' => $this->faker->sentence(),
-            'description' => $this->faker->paragraph(),
-            'author_id' => User::factory(),
-            'organizer_id' => Organizer::factory(),
-            'location_id' => Location::factory(),
-            'category_id' => Category::factory(),
-            'datetime_from' => $this->faker->dateTime(),
-            'datetime_to' => $this->faker->dateTime(),
-            'is_online' => $this->faker->boolean(),
-            'price' => $this->faker->randomNumber(),
+            'title'         => $this->faker->sentence(),
+            'description'   => $this->faker->paragraph(),
+            'type'          => 'free',
+            'author_id'     => User::factory(),
+            'organizer_id'  => Organizer::factory(),
+            'location_id'   => Location::factory(),
+            'category_id'   => Category::factory(),
+            'datetime_from' => $this->faker->dateTimeBetween('-1 year', 'now'),
+            'datetime_to'   => $this->faker->dateTimeBetween('now', '+1 year'),
+            'is_online'     => $this->faker->boolean(),
+            'capacity'      => $this->faker->numberBetween(1, 1000),
         ];
     }
 

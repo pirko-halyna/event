@@ -19,6 +19,30 @@ class EventRouteTest extends BaseRouteTest
     }
 
     #[Test]
+    public function store_event_route_exists(): void
+    {
+        $this->assertRouteExists('events', 'events.store');
+    }
+
+    #[Test]
+    public function update_event_route_exists(): void
+    {
+        $this->assertTrue(
+            Route::has('events.update'),
+            'Route "events.update" does not exist.'
+        );
+    }
+
+    #[Test]
+    public function destroy_event_route_exists(): void
+    {
+        $this->assertTrue(
+            Route::has('events.destroy'),
+            'Route "events.destroy" does not exist.'
+        );
+    }
+
+    #[Test]
     public function add_favourite_event_route_exists(): void
     {
         $this->assertTrue(

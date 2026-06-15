@@ -7,14 +7,13 @@ use Illuminate\Support\Str;
 
 class TicketService
 {
-    public function createTickets(int $orderId, int $eventId, int $count): void
+    public function createTickets(int $orderId, int $count): void
     {
         $tickets = [];
 
         for ($i = 0; $i < $count; $i++) {
             $tickets[] = [
                 'order_id' => $orderId,
-                'event_id' => $eventId,
                 'ticket_code' => $this->generateTicketCode(),
                 'created_at' => now(),
                 'updated_at' => now(),

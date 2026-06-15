@@ -20,6 +20,7 @@ class EventResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            'type' => $this->type,
             'author' => new AuthorResource($this->whenLoaded('author')),
             'category' => new CategoryResource($this->whenLoaded('category')),
             'location' => new LocationResource($this->whenLoaded('location')),
@@ -27,7 +28,7 @@ class EventResource extends JsonResource
             'datetime_from' => $this->datetime_from,
             'datetime_to' => $this->datetime_to,
             'is_online' => $this->is_online,
-            'price' => $this->price,
+            'capacity' => $this->capacity,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

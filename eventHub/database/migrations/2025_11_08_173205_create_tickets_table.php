@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_id')->constrained()->cascadeOnDelete();
             $table->foreignId('order_id')->nullable()->constrained()->cascadeOnDelete();
             $table->string('ticket_code', 100)->unique();
             $table->timestamps();

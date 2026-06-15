@@ -37,6 +37,8 @@ Route::apiResource('locations', LocationController::class)->only('index');
 Route::apiResource('events', EventController::class)->only(['index', 'show']);
 
 Route::middleware('auth.token')->group(function () {
+    Route::apiResource('events', EventController::class)->only(['store', 'update', 'destroy']);
+
     Route::post('/events/{event}/favourite', [EventController::class, 'addToFavourite'])
         ->name('events.add-favourite');
     Route::delete('/events/{event}/favourite', [EventController::class, 'removeFromFavourite'])
