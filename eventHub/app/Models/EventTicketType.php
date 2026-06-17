@@ -15,6 +15,11 @@ class EventTicketType extends Model
         'name',
         'price',
         'description',
+        'quantity',
+    ];
+
+    protected $casts = [
+        'price' => 'decimal:2',
     ];
 
     public function event(): BelongsTo
