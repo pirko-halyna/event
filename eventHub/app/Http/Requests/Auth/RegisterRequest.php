@@ -15,10 +15,10 @@ class RegisterRequest extends FormRequest
     {
         return [
             'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'phone' => 'string|nullable||min:9',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|string|confirmed',
+            'last_name'  => 'required|string|max:255',
+            'phone'      => 'nullable|string|min:9',
+            'email'      => 'required|email|unique:users',
+            'password'   => 'required|string|min:8|max:72|confirmed',
         ];
     }
 }

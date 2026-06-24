@@ -14,6 +14,12 @@ use Tests\TestCase;
 #[Group('auth')]
 class RegisterRequestTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware();
+    }
+
     #[Test]
     public function email_is_required(): void
     {

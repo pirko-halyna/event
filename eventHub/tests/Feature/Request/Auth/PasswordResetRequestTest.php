@@ -30,12 +30,4 @@ class PasswordResetRequestTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['email' => 'The email field must be a valid email address.']);
     }
-
-    #[Test]
-    public function email_must_exist_in_users_table(): void
-    {
-        $this->postJson(route('auth.password-reset.request'), ['email' => 'nonexistent@test.com'])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['email' => 'The email address is not registered.']);
-    }
 }

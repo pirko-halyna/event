@@ -15,7 +15,7 @@ Route::prefix('auth')->group(function () {
         ->middleware('throttle:login')->name('auth.login');
 
     Route::post('logout', [AuthController::class, 'logout'])
-        ->middleware('auth')->name('auth.logout');
+        ->middleware('auth.token')->name('auth.logout');
 
     Route::post('register', [AuthController::class, 'register'])
         ->middleware('throttle:register')->name('auth.register');

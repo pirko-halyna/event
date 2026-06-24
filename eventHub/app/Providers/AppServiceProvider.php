@@ -26,13 +26,18 @@ class AppServiceProvider extends ServiceProvider
     {
         JsonResource::withoutWrapping();
 
-        ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
-            return route('auth.password-reset.confirm', [
-                'token' => $token,
-                'email' => $notifiable->getEmailForPasswordReset(),
-            ]);
-        });
+        ResetPassword::createUrlUsing(fn ($notifiable, string $token) =>
+            rtrim(config('app.frontend_url', config('app.url')), '/')
+            . '/reset-password?token=' . $token
+            . '&email=' . urlencode($notifiable->getEmailForPasswordReset())
+        );
 
+        $this->loginLimiter();
+        $this->passwordLimiter();
+        $this->registerLimiter();
+    }
+
+    private function loginLimiter(): void {
         RateLimiter::for('login', function (Request $request) {
             $email = $request->input('email');
 
@@ -40,13 +45,17 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(3)->by($email ?: $request->ip()),
             ];
         });
+    }
 
+    private function passwordLimiter(): void {
         RateLimiter::for('password-reset', function (Request $request) {
             return [
                 Limit::perMinute(5)->by($request->ip()),
             ];
         });
+    }
 
+    private function registerLimiter(): void {
         RateLimiter::for('register', function (Request $request) {
             return [
                 Limit::perMinute(10)->by($request->ip()),
