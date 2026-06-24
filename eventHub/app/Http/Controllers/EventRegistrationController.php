@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\EventRegistrationRequest;
 use App\Models\Event;
 use Illuminate\Http\JsonResponse;
 use App\Services\EventRegistrationService;

@@ -14,7 +14,7 @@ class DeletePasswordResetTokens extends Command
     public function handle(): void
     {
         DB::table('password_reset_tokens')
-            ->where('created_at', '<', now()->subDay())
+            ->where('created_at', '<', now()->subMinutes(config('auth.passwords.users.expire')))
             ->delete();
     }
 }

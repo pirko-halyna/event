@@ -10,6 +10,7 @@ use App\Http\Requests\Auth\{
 };
 use App\Http\Resources\TokenResource;
 use App\Services\AuthService;
+use App\Services\PasswordResetService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\{JsonResponse, Response};
 use Illuminate\Validation\ValidationException;
@@ -61,28 +62,26 @@ class AuthController extends Controller
 
     /**
      * @param PasswordResetRequest $request
-     * @param AuthService $service
+     * @param PasswordResetService $service
      * @return JsonResponse
      */
-    public function passwordResetRequest(PasswordResetRequest $request, AuthService $service): JsonResponse
+    public function passwordResetRequest(PasswordResetRequest $request, PasswordResetService $service): JsonResponse
     {
-        $service->requestPasswordReset($request->email);
+        $service->sendResetCode($request->email);
 
-        return response()->json(['message' => 'If this email is registered, a reset link has been sent.']);
+        return response()->json(['message' => 'If this email is registered, a reset code has been sent.']);
     }
 
     /**
      * @param NewPasswordRequest $request
-     * @param AuthService $service
+     * @param PasswordResetService $service
      * @return JsonResponse
      * @throws ValidationException
      */
-    public function passwordResetConfirm(NewPasswordRequest $request, AuthService $service): JsonResponse
+    public function passwordResetConfirm(NewPasswordRequest $request, PasswordResetService $service): JsonResponse
     {
-        $service->resetPassword($request->token, $request->email, $request->new_password);
+        $service->resetPassword($request->email, $request->token, $request->new_password);
 
-        return response()->json([
-            'message' => 'Password reset successfully',
-        ]);
+        return response()->json(['message' => 'Password reset successfully']);
     }
 }

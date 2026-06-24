@@ -34,12 +34,9 @@ class PasswordResetResponseTest extends TestCase
             'email' => 'nonexistent@test.com',
         ]);
 
-        $response->assertStatus(422)
+        $response->assertOk()
             ->assertJson([
-                'message' => 'The email address is not registered.',
-                'errors' => [
-                    'email' => ['The email address is not registered.'],
-                ]
+                'message' => 'If this email is registered, a reset code has been sent.',
             ]);
     }
 }

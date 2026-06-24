@@ -1,6 +1,6 @@
 <?php
 
-namespace Feature\Request\Auth;
+namespace Tests\Feature\Request\Auth;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Password;
@@ -12,6 +12,12 @@ use Tests\TestCase;
 #[Group('auth')]
 class NewPasswordRequestTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware();
+    }
+
     #[Test]
     public function new_password_is_required(): void
     {

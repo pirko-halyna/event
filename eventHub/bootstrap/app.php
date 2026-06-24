@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuthTokenMiddleware;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,7 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'v1'
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->throttleWithRedis();
         $middleware->alias([
             'auth.token' => AuthTokenMiddleware::class,
         ]);
@@ -27,7 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ])
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(
-            fn (JWTException $exception) => response()->json(['error' => $exception->getMessage()], 401)
+            fn (AuthenticationException $exception) => response()->json(['message' => 'Unauthorized'], 401)
+        );
+
+        $exceptions->render(
+            fn (JWTException $exception) => response()->json(['message' => 'Unauthorized'], 401)
         );
 
         $exceptions->render(
