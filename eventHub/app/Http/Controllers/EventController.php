@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\IndexEventRequest;
+use App\Http\Requests\StoreEventRequest;
+use App\Http\Requests\UpdateEventRequest;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
 use App\Models\Favourite;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class EventController extends Controller
@@ -39,6 +42,32 @@ class EventController extends Controller
     {
         $event->load(['author', 'category', 'location', 'organizer']);
         return new EventResource($event);
+    }
+
+    public function store(StoreEventRequest $request): JsonResponse
+    {
+        $event = Event::create([
+            ...$request->validated(),
+            'author_id' => $request->user()->id,
+        ]);
+
+        return (new EventResource($event))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function update(UpdateEventRequest $request, Event $event): EventResource
+    {
+        $event->update($request->validated());
+
+        return new EventResource($event);
+    }
+
+    public function destroy(Event $event): Response
+    {
+        $event->delete();
+
+        return response()->noContent();
     }
 
     /**

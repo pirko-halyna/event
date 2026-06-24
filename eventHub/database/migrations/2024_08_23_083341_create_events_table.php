@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->longText('description');
+            $table->longText('description')->nullable();
+            $table->enum('type', ['free', 'paid']);
             $table->unsignedBigInteger('author_id');
             $table->unsignedBigInteger('organizer_id');
-            $table->unsignedBigInteger('location_id');
+            $table->unsignedBigInteger('location_id')->nullable();
             $table->unsignedBigInteger('category_id');
 
             $table->foreign('author_id')->references('id')->on('users')->onDelete('cascade');
@@ -27,8 +28,8 @@ return new class extends Migration
 
             $table->dateTime('datetime_from');
             $table->dateTime('datetime_to');
-            $table->boolean('is_online');
-            $table->integer('price')->nullable();
+            $table->boolean('is_online')->default(false);
+            $table->unsignedInteger('capacity')->nullable();
             $table->timestamps();
         });
     }

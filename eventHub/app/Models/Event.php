@@ -18,6 +18,7 @@ class Event extends Model
     protected $fillable = [
         'title',
         'description',
+        'type',
         'author_id',
         'category_id',
         'location_id',
@@ -25,11 +26,13 @@ class Event extends Model
         'datetime_from',
         'datetime_to',
         'is_online',
-        'price'
+        'capacity',
     ];
 
     protected $casts = [
         'is_online' => 'boolean',
+        'datetime_from' => 'datetime',
+        'datetime_to' => 'datetime',
     ];
 
     public function category(): BelongsTo
@@ -58,6 +61,11 @@ class Event extends Model
         $filter = new FilterBuilder($query, $filters, $namespace);
 
         return $filter->apply();
+    }
+
+    public function ticketTypes(): HasMany
+    {
+        return $this->hasMany(EventTicketType::class);
     }
 
     public function favouriteUsers()

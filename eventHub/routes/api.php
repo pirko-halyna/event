@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\{EventRegistrationController,
+    EventTicketTypeController,
     OrderController,
     OrganizerController,
     LocationController,
@@ -36,7 +37,15 @@ Route::apiResource('locations', LocationController::class)->only('index');
 
 Route::apiResource('events', EventController::class)->only(['index', 'show']);
 
+Route::get('events/{event}/ticket-types', [EventTicketTypeController::class, 'index'])
+    ->name('events.ticket-types.index');
+
 Route::middleware('auth.token')->group(function () {
+    Route::apiResource('events', EventController::class)->only(['store', 'update', 'destroy']);
+
+    Route::apiResource('events.ticket-types', EventTicketTypeController::class)
+        ->only(['store', 'update', 'destroy']);
+
     Route::post('/events/{event}/favourite', [EventController::class, 'addToFavourite'])
         ->name('events.add-favourite');
     Route::delete('/events/{event}/favourite', [EventController::class, 'removeFromFavourite'])

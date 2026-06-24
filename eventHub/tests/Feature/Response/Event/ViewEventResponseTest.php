@@ -56,7 +56,6 @@ class ViewEventResponseTest extends TestCase
                 'updated_at' => $event->organizer->updated_at->format('Y-m-d\TH:i:s.u\Z'),
             ],
             'is_online' => $event->is_online,
-            'price' => $event->price,
             'created_at' => $event->created_at->format('Y-m-d\TH:i:s.u\Z'),
             'updated_at' => $event->updated_at->format('Y-m-d\TH:i:s.u\Z'),
         ]);

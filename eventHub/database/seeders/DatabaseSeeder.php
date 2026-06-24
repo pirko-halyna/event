@@ -13,16 +13,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-//        User::factory()->create([
-//            'first_name' => 'Admin',
-//            'email' => 'admin@gmail.com',
-//            'password' => 'admin',
-//        ]);
+        User::factory()->create([
+            'first_name' => 'Admin',
+            'email' => 'admin@gmail.com',
+            'password' => 'admin',
+        ]);
 
         Event::factory()->count(10)->create();
 
         $this->call([
             CategoriesSeeder::class,
+            EventTicketTypesSeeder::class,
         ]);
     }
 }

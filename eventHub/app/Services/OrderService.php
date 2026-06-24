@@ -25,7 +25,7 @@ class OrderService
                 'total_amount' => $event->price * $ticketCount,
             ]);
 
-            $this->ticketService->createTickets($order->id, $eventId, $ticketCount);
+            $this->ticketService->createTickets($order->id, $ticketCount);
 
             event(new EventRegistered($order));
 
