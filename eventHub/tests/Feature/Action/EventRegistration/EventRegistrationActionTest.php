@@ -24,7 +24,7 @@ class EventRegistrationActionTest extends TestCase
         $event = Event::factory()->create();
 
         $this->mock(AuthService::class, function ($mock) use ($user) {
-            $mock->shouldReceive('getUserByToken')
+            $mock->shouldReceive('authenticateToken')
                 ->andReturn($user);
         });
 
@@ -57,7 +57,7 @@ class EventRegistrationActionTest extends TestCase
         $user = User::factory()->create();
         $event = Event::factory()->create();
         $this->mock(AuthService::class, function ($mock) use ($user) {
-            $mock->shouldReceive('getUserByToken')
+            $mock->shouldReceive('authenticateToken')
                 ->andReturn($user);
         });
 

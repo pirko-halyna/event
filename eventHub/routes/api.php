@@ -21,10 +21,10 @@ Route::prefix('auth')->group(function () {
         ->middleware('throttle:register')->name('auth.register');
 
     Route::post('password-reset/request', [AuthController::class, 'passwordResetRequest'])
-        ->middleware('throttle:password-reset')->name('auth.password-reset.request');
+        ->middleware('throttle:password-reset-request')->name('auth.password-reset.request');
 
     Route::post('password-reset/confirm', [AuthController::class, 'passwordResetConfirm'])
-        ->middleware('throttle:password-reset')->name('auth.password-reset.confirm');
+        ->middleware('throttle:password-reset-confirm')->name('auth.password-reset.confirm');
 });
 
 Route::apiResource('categories', CategoryController::class)->only('index');

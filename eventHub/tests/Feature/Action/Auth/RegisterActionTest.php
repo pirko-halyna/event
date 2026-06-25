@@ -3,7 +3,7 @@
 namespace Tests\Feature\Action\Auth;
 
 use App\Models\User;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\{Group, Test};
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -15,10 +15,16 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 #[Group('auth')]
 class RegisterActionTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Http::fake(['https://api.pwnedpasswords.com/*' => Http::response('', 200)]);
+    }
+
     #[Test]
     public function register_endpoint_returns_valid_token(): void
     {
-        $password = Str::random(8);
+        $password = 'ValidPass1';
         $userData = User::factory()->withPasswordConfirmation($password)->raw();
 
         $result = $this->postJson(route('auth.register'), $userData);
@@ -29,7 +35,7 @@ class RegisterActionTest extends TestCase
     #[Test]
     public function register_endpoint_creates_new_user()
     {
-        $password = Str::random(8);
+        $password = 'ValidPass1';
         $userData = User::factory()->withPasswordConfirmation($password)->raw();
         $response = $this->postJson(route('auth.register'), $userData);
 

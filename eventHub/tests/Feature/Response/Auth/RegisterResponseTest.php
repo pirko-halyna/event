@@ -3,7 +3,7 @@
 namespace Tests\Feature\Response\Auth;
 
 use App\Models\User;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\{Group, Test};
 use Tests\TestCase;
 
@@ -14,10 +14,16 @@ use Tests\TestCase;
 #[Group('auth')]
 class RegisterResponseTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Http::fake(['https://api.pwnedpasswords.com/*' => Http::response('', 200)]);
+    }
+
     #[Test]
     public function registration_response_format_is_correct()
     {
-        $password = Str::random(8);
+        $password = 'ValidPass1';
         $userData = User::factory()->withPasswordConfirmation($password)->withoutPhone()->raw();
 
         $response = $this->postJson(route('auth.register'), $userData);

@@ -2,10 +2,7 @@
 
 namespace Tests\Feature\Request\Auth;
 
-use App\Models\User;
-use Illuminate\Support\Facades\Password;
 use PHPUnit\Framework\Attributes\{Group, Test};
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 #[Group('request')]
@@ -19,58 +16,62 @@ class NewPasswordRequestTest extends TestCase
     }
 
     #[Test]
-    public function new_password_is_required(): void
+    public function code_is_required(): void
     {
         $this->postJson(route('auth.password-reset.confirm'))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['new_password' => 'The new password field is required.']);
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['code']);
     }
 
     #[Test]
-    public function new_password_must_be_a_string(): void
+    public function code_must_be_6_digits(): void
     {
-        $this->postJson(route('auth.password-reset.confirm'), ['new_password' => 46893938])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['new_password' => 'The new password field must be a string.']);
+        $this->postJson(route('auth.password-reset.confirm'), ['code' => '12345'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['code']);
     }
 
     #[Test]
-    public function new_password_is_rejected_if_too_small(): void
+    public function code_must_be_numeric(): void
     {
-        $this->postJson(route('auth.password-reset.confirm'), ['new_password' => '123'])
-            ->assertJsonValidationErrors(['new_password' => 'The new password field must be at least 8 characters.']);
+        $this->postJson(route('auth.password-reset.confirm'), ['code' => 'abcdef'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['code']);
     }
 
     #[Test]
-    public function token_is_required(): void
+    public function password_is_required(): void
     {
         $this->postJson(route('auth.password-reset.confirm'))
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['token' => 'The token field is required.']);
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['password']);
     }
 
     #[Test]
-    public function token_must_be_a_string(): void
+    public function password_must_be_at_least_8_characters(): void
     {
         $this->postJson(route('auth.password-reset.confirm'), [
-            'token' => 12345,
-        ])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors(['token' => 'The token field must be a string.']);
+            'password'              => 'short',
+            'password_confirmation' => 'short',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['password']);
     }
 
     #[Test]
-    public function invalid_token_is_rejected(): void
+    public function password_must_be_confirmed(): void
     {
-        $user = User::factory()->create();
-
         $this->postJson(route('auth.password-reset.confirm'), [
-            'email'                    => $user->email,
-            'new_password'             => 'validpassword',
-            'new_password_confirmation' => 'validpassword',
-            'token'                    => 'nonexistenttoken',
-        ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['token']);
+            'password'              => 'validpassword',
+            'password_confirmation' => 'differentpassword',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['password']);
+    }
+
+    #[Test]
+    public function email_is_required(): void
+    {
+        $this->postJson(route('auth.password-reset.confirm'))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['email']);
     }
 }

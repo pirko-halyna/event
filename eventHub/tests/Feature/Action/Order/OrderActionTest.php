@@ -34,7 +34,7 @@ class OrderActionTest extends TestCase
         ];
 
         $this->mock(AuthService::class, function ($mock) use ($user) {
-            $mock->shouldReceive('getUserByToken')
+            $mock->shouldReceive('authenticateToken')
                 ->andReturn($user);
         });
 

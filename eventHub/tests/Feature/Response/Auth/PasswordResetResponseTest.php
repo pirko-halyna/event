@@ -6,37 +6,45 @@ use App\Models\User;
 use PHPUnit\Framework\Attributes\{Group, Test};
 use Tests\TestCase;
 
-/**
- * Class PasswordResetResponseTest
- */
 #[Group('response')]
 #[Group('auth')]
 class PasswordResetResponseTest extends TestCase
 {
+    private const EXPECTED_MESSAGE = 'If an account with that email exists, a verification code has been sent.';
+
     #[Test]
-    public function successfulPasswordResetRequestResponse(): void
+    public function it_returns_200_for_existing_email(): void
     {
-        User::factory()->create([
-            'email' => 'test@test.com',
-        ]);
+        $user = User::factory()->create();
 
-        $response = $this->postJson(route('auth.password-reset.request'), [
-            'email' => 'test@test.com',
-        ]);
-
-        $response->assertOk();
+        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email])
+            ->assertOk()
+            ->assertJson(['message' => self::EXPECTED_MESSAGE]);
     }
 
     #[Test]
-    public function nonExistentEmailResponse(): void
+    public function it_returns_200_for_nonexistent_email(): void
     {
-        $response = $this->postJson(route('auth.password-reset.request'), [
-            'email' => 'nonexistent@test.com',
-        ]);
+        $this->postJson(route('auth.password-reset.request'), ['email' => 'ghost@example.com'])
+            ->assertOk()
+            ->assertJson(['message' => self::EXPECTED_MESSAGE]);
+    }
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'If this email is registered, a reset code has been sent.',
-            ]);
+    #[Test]
+    public function response_body_is_identical_for_existing_and_nonexistent_email(): void
+    {
+        $user = User::factory()->create();
+
+        $existingResponse = $this->postJson(
+            route('auth.password-reset.request'),
+            ['email' => $user->email]
+        )->json();
+
+        $missingResponse = $this->postJson(
+            route('auth.password-reset.request'),
+            ['email' => 'ghost@example.com']
+        )->json();
+
+        $this->assertSame($existingResponse, $missingResponse);
     }
 }

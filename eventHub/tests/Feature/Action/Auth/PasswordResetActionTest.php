@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Action\Auth;
 
+use App\Mail\PasswordResetMail;
+use App\Models\PasswordResetCode;
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\{Group, Test};
 use Tests\TestCase;
 
@@ -18,79 +18,137 @@ class PasswordResetActionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Notification::fake();
+        Mail::fake();
+        Http::fake(['https://api.pwnedpasswords.com/*' => Http::response('', 200)]);
     }
 
     #[Test]
-    public function successful_password_reset(): void
-    {
-        $user = User::factory()->create([
-            'email' => 'test@example.com',
-        ]);
-
-        $this->postJson(route('auth.password-reset.request'), [
-            'email' => $user->email,
-        ]);
-
-        Notification::assertSentTo($user, ResetPassword::class);
-    }
-
-    #[Test]
-    public function it_allows_multiple_password_reset_requests_for_same_email(): void
+    public function it_sends_mail_when_user_exists(): void
     {
         $user = User::factory()->create();
 
-        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email])
-            ->assertOk();
+        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email]);
 
-        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email])
-            ->assertOk();
-
-        $this->assertDatabaseCount('password_reset_tokens', 1);
+        Mail::assertQueued(PasswordResetMail::class, fn ($mail) => $mail->hasTo($user->email));
     }
 
     #[Test]
-    public function invalid_email_password_reset_request(): void
+    public function it_does_not_send_mail_for_nonexistent_email(): void
     {
-        $this->postJson(route('auth.password-reset.request'), [
-            'email' => 'nonexistent@example.com',
-        ]);
+        $this->postJson(route('auth.password-reset.request'), ['email' => 'ghost@example.com']);
 
-        Notification::assertNothingSent();
+        Mail::assertNothingQueued();
     }
 
     #[Test]
-    public function user_password_changed_after_reset(): void
+    public function it_stores_hashed_code_in_database(): void
     {
         $user = User::factory()->create();
-        $token = Password::createToken($user);
-        $newPassword = Str::random(16);
+
+        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email]);
+
+        $this->assertDatabaseHas('password_reset_codes', [
+            'email'   => $user->email,
+            'used_at' => null,
+        ]);
+    }
+
+    #[Test]
+    public function it_invalidates_previous_unused_code_on_new_request(): void
+    {
+        $user = User::factory()->create();
+
+        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email]);
+        $this->postJson(route('auth.password-reset.request'), ['email' => $user->email]);
+
+        $this->assertSame(1, PasswordResetCode::where('email', $user->email)->whereNull('used_at')->count());
+        $this->assertSame(2, PasswordResetCode::where('email', $user->email)->count());
+    }
+
+    #[Test]
+    public function it_resets_password_with_valid_code(): void
+    {
+        $user = User::factory()->create();
+        $code = '123456';
+
+        PasswordResetCode::create([
+            'email'      => $user->email,
+            'code'       => Hash::make($code),
+            'expires_at' => now()->addMinutes(15),
+        ]);
 
         $this->postJson(route('auth.password-reset.confirm'), [
-            'email'                    => $user->email,
-            'new_password'             => $newPassword,
-            'new_password_confirmation' => $newPassword,
-            'token'                    => $token,
+            'email'                 => $user->email,
+            'code'                  => $code,
+            'password'              => 'NewPassword1',
+            'password_confirmation' => 'NewPassword1',
         ]);
 
-        $user->refresh();
-        $this->assertTrue(Hash::check($newPassword, $user->password));
+        $this->assertTrue(Hash::check('NewPassword1', $user->fresh()->password));
     }
 
     #[Test]
-    public function password_reset_token_deleted_after_usage(): void
+    public function it_marks_code_as_used_after_successful_reset(): void
     {
         $user = User::factory()->create();
-        $token = Password::createToken($user);
-        $newPassword = Str::random(16);
+        $code = '654321';
 
-        $this->postJson(route('auth.password-reset.confirm'), [
-            'email'                    => $user->email,
-            'new_password'             => $newPassword,
-            'new_password_confirmation' => $newPassword,
-            'token'                    => $token,
+        PasswordResetCode::create([
+            'email'      => $user->email,
+            'code'       => Hash::make($code),
+            'expires_at' => now()->addMinutes(15),
         ]);
 
-        $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
+        $this->postJson(route('auth.password-reset.confirm'), [
+            'email'                 => $user->email,
+            'code'                  => $code,
+            'password'              => 'NewPassword1',
+            'password_confirmation' => 'NewPassword1',
+        ]);
+
+        $this->assertNotNull(
+            PasswordResetCode::where('email', $user->email)->first()->used_at
+        );
+    }
+
+    #[Test]
+    public function it_rejects_already_used_code(): void
+    {
+        $user = User::factory()->create();
+        $code = '111111';
+
+        PasswordResetCode::create([
+            'email'      => $user->email,
+            'code'       => Hash::make($code),
+            'expires_at' => now()->addMinutes(15),
+            'used_at'    => now(),
+        ]);
+
+        $this->postJson(route('auth.password-reset.confirm'), [
+            'email'                 => $user->email,
+            'code'                  => $code,
+            'password'              => 'NewPassword1',
+            'password_confirmation' => 'NewPassword1',
+        ])->assertUnprocessable();
+    }
+
+    #[Test]
+    public function it_rejects_expired_code(): void
+    {
+        $user = User::factory()->create();
+        $code = '222222';
+
+        PasswordResetCode::create([
+            'email'      => $user->email,
+            'code'       => Hash::make($code),
+            'expires_at' => now()->subMinutes(1),
+        ]);
+
+        $this->postJson(route('auth.password-reset.confirm'), [
+            'email'                 => $user->email,
+            'code'                  => $code,
+            'password'              => 'NewPassword1',
+            'password_confirmation' => 'NewPassword1',
+        ])->assertUnprocessable();
     }
 }

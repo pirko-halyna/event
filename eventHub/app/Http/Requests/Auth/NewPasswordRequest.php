@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 class NewPasswordRequest extends FormRequest
 {
@@ -16,9 +17,9 @@ class NewPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email'        => ['required', 'string', 'max:255', 'email:rfc'],
-            'token'        => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+            'email'    => ['required', 'string', 'max:255', 'email:rfc'],
+            'code'     => ['required', 'string', 'digits:6'],
+            'password' => ['required', 'string', 'max:72', 'confirmed', Password::min(8)->mixedCase()->numbers()->uncompromised()],
         ];
     }
 }

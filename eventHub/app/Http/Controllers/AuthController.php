@@ -69,7 +69,9 @@ class AuthController extends Controller
     {
         $service->sendResetCode($request->email);
 
-        return response()->json(['message' => 'If this email is registered, a reset code has been sent.']);
+        return response()->json([
+            'message' => 'If an account with that email exists, a verification code has been sent.'
+        ]);
     }
 
     /**
@@ -80,8 +82,10 @@ class AuthController extends Controller
      */
     public function passwordResetConfirm(NewPasswordRequest $request, PasswordResetService $service): JsonResponse
     {
-        $service->resetPassword($request->email, $request->token, $request->new_password);
+        $service->resetPassword($request->email, $request->code, $request->password);
 
-        return response()->json(['message' => 'Password reset successfully']);
+        return response()->json([
+            'message' => 'Password has been reset successfully.'
+        ]);
     }
 }

@@ -8,4 +8,4 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
-Schedule::command('password-reset-tokens:delete')->daily();
+Schedule::command('password-reset-codes:delete')->daily();

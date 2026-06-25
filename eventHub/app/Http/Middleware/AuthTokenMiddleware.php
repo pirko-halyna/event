@@ -27,13 +27,14 @@ class AuthTokenMiddleware
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $user = $this->authService->getUserByToken($token);
+        $user = $this->authService->authenticateToken($token);
 
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         auth()->setUser($user);
+
         return $next($request);
     }
 }

@@ -2,46 +2,79 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Password;
+use App\Mail\PasswordResetMail;
+use App\Models\PasswordResetCode;
+use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class PasswordResetService
 {
-    /**
-     * Broker generates a hashed token, stores it, and triggers
-     * User::sendPasswordResetNotification() with the raw token.
-     * Silent for unknown emails to prevent user enumeration.
-     */
+    private const EXPIRY_MINUTES = 15;
+
     public function sendResetCode(string $email): void
     {
-        Password::sendResetLink(['email' => $email]);
+        $code = $this->generateCode();
+        $hash = Hash::make($code);
+
+        $user = User::where('email', $email)->first();
+
+        if ($user === null) {
+            return;
+        }
+
+        DB::transaction(function () use ($user, $hash) {
+            PasswordResetCode::activeForEmail($user->email)
+                ->update(['used_at' => now()]);
+
+            PasswordResetCode::create([
+                'email'      => $user->email,
+                'code'       => $hash,
+                'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
+            ]);
+        });
+
+        Mail::to($user->email)->queue(new PasswordResetMail($code, self::EXPIRY_MINUTES));
     }
 
-    /**
-     * Broker validates the token against the stored hash, executes the
-     * callback, then deletes the token — all handled internally.
-     *
-     * @throws ValidationException
-     */
-    public function resetPassword(string $email, string $token, string $newPassword): void
+    public function resetPassword(string $email, string $code, string $newPassword): void
     {
-        $status = Password::reset(
-            [
-                'email'                 => $email,
-                'token'                 => $token,
-                'password'              => $newPassword,
-                'password_confirmation' => $newPassword,
-            ],
-            function ($user, string $password): void {
-                $user->password = $password;
-                $user->save();
-            }
-        );
+        $userId = null;
 
-        if ($status !== Password::PASSWORD_RESET) {
-            throw ValidationException::withMessages([
-                'token' => [__($status)],
-            ]);
+        DB::transaction(function () use ($email, $code, $newPassword, &$userId) {
+            $resetCode = PasswordResetCode::activeForEmail($email)
+                ->latest()
+                ->lockForUpdate()
+                ->first();
+
+            if ($resetCode === null || ! Hash::check($code, $resetCode->code)) {
+                throw ValidationException::withMessages([
+                    'code' => ['The provided verification code is invalid or expired.'],
+                ]);
+            }
+
+            $resetCode->update(['used_at' => now()]);
+
+            PasswordResetCode::activeForEmail($email)
+                ->update(['used_at' => now()]);
+
+            $userId = User::where('email', $email)->value('id');
+
+            User::where('email', $email)
+                ->update(['password' => Hash::make($newPassword)]);
+        });
+
+        if ($userId !== null) {
+            $refreshTtl = (int) config('jwt.refresh_ttl', 20160);
+            Cache::put("jwt_valid_after:{$userId}", now()->timestamp, now()->addMinutes($refreshTtl));
         }
+    }
+
+    private function generateCode(): string
+    {
+        return str_pad((string) random_int(0, 999_999), 6, '0', STR_PAD_LEFT);
     }
 }

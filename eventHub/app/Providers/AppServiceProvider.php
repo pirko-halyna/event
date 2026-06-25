@@ -2,11 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -26,36 +26,49 @@ class AppServiceProvider extends ServiceProvider
     {
         JsonResource::withoutWrapping();
 
-        ResetPassword::createUrlUsing(fn ($notifiable, string $token) =>
-            rtrim(config('app.frontend_url', config('app.url')), '/')
-            . '/reset-password?token=' . $token
-            . '&email=' . urlencode($notifiable->getEmailForPasswordReset())
-        );
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
 
         $this->loginLimiter();
-        $this->passwordLimiter();
+        $this->passwordResetRequestLimiter();
+        $this->passwordResetConfirmLimiter();
         $this->registerLimiter();
     }
 
-    private function loginLimiter(): void {
+    private function loginLimiter(): void
+    {
         RateLimiter::for('login', function (Request $request) {
-            $email = $request->input('email');
+            $email = strtolower(trim((string) $request->input('email', '')));
 
             return [
-                Limit::perMinute(3)->by($email ?: $request->ip()),
+                Limit::perMinute(5)->by('login|email|' . $email),
+                Limit::perMinute(20)->by('login|ip|' . $request->ip()),
             ];
         });
     }
 
-    private function passwordLimiter(): void {
-        RateLimiter::for('password-reset', function (Request $request) {
+    private function passwordResetRequestLimiter(): void
+    {
+        RateLimiter::for('password-reset-request', function (Request $request) {
             return [
                 Limit::perMinute(5)->by($request->ip()),
             ];
         });
     }
 
-    private function registerLimiter(): void {
+    private function passwordResetConfirmLimiter(): void
+    {
+        RateLimiter::for('password-reset-confirm', function (Request $request) {
+            return [
+                Limit::perMinute(10)->by($request->ip()),
+                Limit::perMinute(5)->by('email|' . $request->input('email', '')),
+            ];
+        });
+    }
+
+    private function registerLimiter(): void
+    {
         RateLimiter::for('register', function (Request $request) {
             return [
                 Limit::perMinute(10)->by($request->ip()),

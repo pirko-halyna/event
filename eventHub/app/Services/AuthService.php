@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -45,13 +46,26 @@ class AuthService
         return auth()->login($user);
     }
 
-    public function getUserByToken(string $token): ?User
+    public function authenticateToken(string $token): ?User
     {
         try {
-            return JWTAuth::setToken($token)->toUser();
+            $user = JWTAuth::setToken($token)->authenticate();
         } catch (JWTException $e) {
             Log::warning('JWT authentication failed.', ['message' => $e->getMessage()]);
             return null;
         }
+
+        if (!$user) {
+            return null;
+        }
+
+        $validAfter = Cache::get("jwt_valid_after:{$user->id}");
+        $issuedAt   = JWTAuth::getPayload()->get('iat');
+
+        if ($validAfter !== null && $issuedAt < $validAfter) {
+            return null;
+        }
+
+        return $user;
     }
 }

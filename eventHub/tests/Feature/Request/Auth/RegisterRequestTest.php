@@ -3,7 +3,7 @@
 namespace Tests\Feature\Request\Auth;
 
 use App\Models\User;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\{Group, Test};
 use Tests\TestCase;
 
@@ -18,6 +18,7 @@ class RegisterRequestTest extends TestCase
     {
         parent::setUp();
         $this->withoutMiddleware();
+        Http::fake(['https://api.pwnedpasswords.com/*' => Http::response('', 200)]);
     }
 
     #[Test]
@@ -39,7 +40,7 @@ class RegisterRequestTest extends TestCase
     #[Test]
     public function email_field_must_be_unique()
     {
-        $password = Str::random(8);
+        $password = 'ValidPass1';
         $user = User::factory()->create();
         $response = $this->postJson(route('auth.register'), [
             'first_name' => $user->firstname,
@@ -134,7 +135,7 @@ class RegisterRequestTest extends TestCase
     #[Test]
     public function phone_field_can_be_null(): void
     {
-        $password = Str::random(8);
+        $password = 'ValidPass1';
         $userData = User::factory()->withPasswordConfirmation($password)->withoutPhone()->raw();
         $this->postJson(route('auth.register'), $userData)
             ->assertStatus(200);
